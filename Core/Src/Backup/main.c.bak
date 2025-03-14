@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,7 +61,22 @@ static void MX_USART1_UART_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-
+ #ifdef __GNUC__
+     #define PUTCHAR_PROTOTYPE int _io_putchar(int ch)
+ #else
+     #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+ #endif /* __GNUC__*/
+ 
+ /******************************************************************
+     *@brief  Retargets the C library printf  function to the USART.
+     *@param  None
+     *@retval None
+ ******************************************************************/
+ PUTCHAR_PROTOTYPE
+ {
+     HAL_UART_Transmit(&huart1, (uint8_t *)&ch,1,0xFFFF);
+     return ch;
+ }
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -143,10 +158,11 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
-		HAL_Delay(100);
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
-		HAL_Delay(100);
+		// 启用RTOS之后代码不会运行到这里
+//		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+//		HAL_Delay(100);
+//		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+//		HAL_Delay(100);
 
     /* USER CODE END WHILE */
 
@@ -288,6 +304,27 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
+    printf("Hellow Eternal Chip\r\n");
+    //1.先读取按键（PA0)的GPIO的电平，如果电平是高电平，则说明，按键没有被按下。
+    if(HAL_GPIO_ReadPin(Key_GPIO_Port, Key_Pin) == GPIO_PIN_SET)
+    {
+        //什么都不做
+    }
+    //2.如果按键（PA0)的电平为低，则说明按键被按下了。
+    if(HAL_GPIO_ReadPin(Key_GPIO_Port, Key_Pin) == GPIO_PIN_RESET)
+    {
+				printf("The key is pressed\r\n");
+        //2.1 LED亮起
+        HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+        //2.2 延时500ms
+        HAL_Delay(500);
+        //2.3 LED熄灭
+        HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+        //2.4 延时500ms
+        HAL_Delay(500);
+    }
+		
+		
     osDelay(1);
   }
   /* USER CODE END 5 */
